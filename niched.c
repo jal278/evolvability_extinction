@@ -5,8 +5,10 @@
 int EXT_FREQ=100;
 float EXT_SURVIVAL=0.01;
 int seed=0;
+bool saveMovie=true;
+int frameCounter=0;
 
-//#define RENDER 
+#define RENDER 
 
 #ifdef RENDER
 #include "render.h"
@@ -397,6 +399,25 @@ int main(int argc, char** argv) {
 
 #ifdef RENDER
 
+void screenshot (char filename[160],int x, int y)
+{// get the image data
+long imageSize = x * y * 3;
+unsigned char *data = new unsigned char[imageSize];
+glReadPixels(0,0,x,y, GL_BGR,GL_UNSIGNED_BYTE,data);// split x and y sizes into bytes
+int xa= x % 256;
+int xb= (x-xa)/256;int ya= y % 256;
+int yb= (y-ya)/256;//assemble the header
+unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(char)xa,(char)xb,(char)ya,(char)yb,24,0};
+// write header and data to file
+fstream File(filename, ios::out | ios::binary);
+File.write (reinterpret_cast<char *>(header), sizeof (char)*18);
+File.write (reinterpret_cast<char *>(data), sizeof (char)*imageSize);
+File.close();
+
+delete[] data;
+data=NULL;
+}
+
 void display() 
 {
         double avg_evo=pop_avg(cur_pop);
@@ -437,9 +458,16 @@ void display()
 		glVertex3f( dx,dy+sz, 0.0f);		
         }
 	glEnd();				
- 
+       
 	glutSwapBuffers();
+        if(saveMovie) {
+         char name_buffer[200];
+         sprintf(name_buffer,"movie/out%04d.tga",frameCounter++);
+         screenshot(name_buffer,640,480);
+        }
+
 	for(int i=0;i<5;i++)
          do_one_gen();
 }
+
 #endif
